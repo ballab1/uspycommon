@@ -1,0 +1,8 @@
+framework:
+  # Number of seconds to wait before gracefully exit
+  # Default 50 seconds. Optional setting
+  signal_handler_wait_time: 10 #seconds
+
+job_container:
+  x: 1
+  y: 2

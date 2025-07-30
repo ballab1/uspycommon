@@ -1,0 +1,19 @@
+framework:
+  monitor:
+    port: 8008
+    collect_default_metric: True
+    metrics:
+    - name: test_metric4
+      description: example metric4 in the ms
+      labels: []
+      type: GAUGE
+      collector:
+        module: metricgenerator2
+        class: MetricGenerator2
+    - name: test_metric5
+      description: example metric5 in ms
+      labels: ['l1']
+      type: COUNTER
+      collector:
+        module: metricgenerator3
+        class: MetricGenerator3

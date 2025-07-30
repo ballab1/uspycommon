@@ -1,0 +1,24 @@
+github:
+  base_url: 'https://test.lab.emc.com/api/v3'
+  raw_github_url: "https://raw.test.cec.lab.emc.com"
+  gql_url: 'https://test.cec.lab.emc.com/api/graphql'
+  token: 'test_dir/techops_github_token_rw'
+  retry: 
+    total: 3
+    backoff_factor: 1
+  project_level_config_folder: .drp
+  project_level_service_config_file: 'copyright_config.yaml'
+  global_exclusion_dict: 
+    exclusion_file_paths: 
+      - "exclusion_list.yml"
+    exclusion_files_pattern: 
+      - "README.md"
+    exclusion_folders: 
+      - ".drp"
+      - ".git"
+  drpcheckers_app:
+    app_url: 'https://test.cec.lab.emc.com/github-apps/drp-checkers'
+    app_id: 99
+    installation_id : 186
+    app_private_key : | 
+      """<rsa private key>"""

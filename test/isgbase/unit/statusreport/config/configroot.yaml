@@ -1,0 +1,29 @@
+framework:
+  # Number of seconds to wait before gracefully exit
+  # Default 50 seconds. Optional setting
+  signal_handler_wait_time: 1 #seconds
+  # Number of times to call a function with the `attempt` decorator
+  # Optional setting. Default 3 times
+  # The minimum value of this flag is 1.
+  # Otherwise functions won't be called.
+  max_attempts: 2
+  # Time interval between each function call
+  # Optional setting. Default 5 seconds
+  attempt_interval: 1 #seconds
+  # set logging level, defaults to INFO. Optional field
+  log_level: "INFO"
+
+  monitor:
+    port: 9100
+    collect_default_metric: True
+
+kafka:
+  bootstrap_servers:
+    - "10.10.10.10:9092"
+  producers:
+    - name: producer1
+      topics:
+        - name: "testTopic"
+
+status_reporter:
+  producer_name: producer1
