@@ -1,0 +1,21 @@
+framework:
+  monitor:
+    port: 9100
+    collect_default_metric: True
+  signal_handler_wait_time: 10 #seconds
+monitor:
+  metrics:
+  - name: test_metric2
+    description: example metric2 in the ms
+    labels: ['l1', 'l2']
+    type: GAUGE
+    collector:
+      module: metricgenerator2
+      class: MetricGenerator2
+  - name: test_metric3
+    description: example metric3 in ms
+    labels: ['l1']
+    type: COUNTER
+    collector:
+      module: metricgenerator3
+      class: MetricGenerator3

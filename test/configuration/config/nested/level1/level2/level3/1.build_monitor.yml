@@ -1,0 +1,11 @@
+scrape_port: 8002
+gauge_metric:
+  value: "last_build_time"
+  description: "Build time in milliseconds per repo per branch per type"
+label:
+  names: ["repo_name", "branch_name", "build_type", "build_status"]
+  values: ["scm.repo", "branch_name", "jenkins_build_type", "result"]
+value: "duration"
+
+kafka_payload_filter:
+  - {"repo_name":"xxx", "branch_name":"xxx", "build_type":"xxx", "build_status": "SUCCESS", "jenkins_build_event":"build_result"}

@@ -1,0 +1,5 @@
+slack:
+    url: slack.com
+    config:
+      token: XOXOXOXO
+      key: slack-key

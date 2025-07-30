@@ -1,0 +1,131 @@
+kafka:
+  bootstrap_servers:
+    - "s2.ubunbtu.home:9092,s7.ubunbtu.home:9092,s8.ubunbtu.home:9092"
+
+  consumers:
+      # If the enabled flag is False or missing, a consumer thread won't start
+    - enabled: true  # required filed
+      name: "consumer1" # required filed
+      topics:
+      # If partition is not specified, we listen on all partitions
+      # For the same consumer, all topics either need have assigned partition or no assigned partition
+        - name: "testTopic4"
+        - name: "testTopic2"
+      # Set your own group_id and client_id.
+      # Don't copy this one. This is an example.
+      group_id: "mr-be-gr-2"
+      client_id: "mr_be_2" # required field
+      # Optional setting. Default: False. This flag is to indicate if maximum
+      # running job throttle will be applied for this consumer.
+      throttle_max_running_jobs: true
+      # optional field, default: 60000
+      session_timeout_ms: 60000
+      # optional field, default: earliest
+      auto_offset_reset: 'earliest'
+      # Optional field: Only one message filter class in module is supported
+      # The first filter class implementation found is picked up. Rest are ignored.
+      filter_module: "messages.mymessagefilter"
+      handlers: # Optional field: Multiple handler modules can be provided
+      # Each module can have multiple handler class implementations
+      # All handler implementations will be picked up.
+        - handler_module: "messages.mymessagehandler"
+
+    - enabled: false  # required filed
+      name: "consumer2" # required filed
+      topics:
+      # If a partition is assigned for one topic, partitions have to be assigned for
+      # all other topics in the same consumer.
+        - name: "testTopic5"
+          partitions:
+          # if no offset is specified or offset is -1,
+          # consumer will read from the last committed offset.
+          - number: 0
+          - number: 1
+            offset: 10
+        - name: "testTopic3"
+          partitions:
+          - number: 0
+            offset: 1
+          - number: 1
+            offset: 2
+      group_id: "mr-be-gr-3"
+      client_id: "mr_be_3" # required field
+      # optional filed, default: 6000
+      session_timeout_ms: 60000
+      # optional field, default: earliest
+      auto_offset_reset: 'earliest'
+      # Optional field: Only one message filter class in module is supported
+      # The first filter class implementation found is picked up. Rest are ignored.
+      filter_module: "messages.mymessagefilter"
+      handlers: #  Optional field: Multiple handler modules can be provided
+      # Each module can have multiple handler class implementations
+      # All handler implementations will be picked up.
+        - handler_module: "messages.mymessagehandler"
+        - handler_module: "messages.mymessagehandler2"
+
+    - enabled: true
+      name: "consumer3"
+      topics:
+        - name: "testTopic1"
+      group_id: "mr-be-gr-1"
+      client_id: "mr_be_1"
+      # if there are not filter or handler modules defined for consumer,
+      # filter and handler instances need to be registered for this consumer in client codes.
+
+    # This consumer supports subscription of topics using topic pattern string
+    - enabled: true  # required filed
+      name: "consumer4" # required filed
+      # Either topics or pattern needs be defined for one consumer, but not both.
+      pattern: "^t.*Topic?"
+      group_id: "mr-be-gr-4"
+      client_id: "mr_be_4" # required field
+      filter_module: "messages.mymessagefilter"
+      handlers: #  Optional field: Multiple handler modules can be provided
+      # Each module can have multiple handler class implementations
+      # All handler implementations will be picked up.
+        - handler_module: "messages.mymessagehandler2"
+
+jobmanager:
+  # The maximum running time for a job before API issues error in log.
+  # Optional setting. Default 1800 seconds.
+  job_max_running_time: 300  # seconds
+  # How long to keep a failed job
+  # Optional setting. Default 120 seconds.
+  keeping_failed_job_time: 60  # seconds
+  # How long to keep a succeeded job
+  # Optional setting. Default 120 seconds.
+  keeping_succeeded_job_time: 30  # seconds
+  # Required setting. A unique name for job manager
+  job_manager_name: "jm-myuS-mytopic"
+  # How many active jobs can be run in parallel
+  # Optional setting. Default is 3 jobs.
+  max_parallel_job: 3
+
+  # A k8s namespace used when running job manager in local VM
+  # This is the namespace where jobs will be deployed in k8s cluster
+  # Optional setting. Ignored if job manager is running in K8s
+  dev_namespace: "drp-staging"
+
+  jobs:
+    - apiVersion: batch/v1
+      kind: Job
+      metadata:
+        generateName: job1-
+      spec:
+        template:
+          spec:
+            containers:
+              - name: container1
+                image: s2.ubuntu.home:5000/alpine/simple_job:v1
+                command: ["python", "-u", "main.py"]
+                imagePullPolicy: Always
+                volumeMounts:
+                  - name: config
+                    mountPath: "/app/config/configroot.yml"
+                    subPath: configroot.yml
+                    readOnly: true
+            volumes:
+              - name: config
+                configMap:
+                  name: job1
+            restartPolicy: OnFailure

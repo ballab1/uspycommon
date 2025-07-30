@@ -1,0 +1,12 @@
+github_app:
+  base_url: 'https://test.lab.emc.com/api/v3'
+  private_key_mount_path: "/etc/pvt_secrets/"
+  retry: 
+    total: 3
+  apps:
+    - name: drpchecker
+      app_id: 99
+      app_private_key : github_app_99_private_key
+    - name: testapp
+      app_id: 199
+      app_private_key : github_app_199_private_key

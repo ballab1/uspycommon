@@ -1,0 +1,59 @@
+kafka:
+  bootstrap_servers:
+    - "broker01:9092"
+    - "broker02:9092"
+    - "broker03:9092"
+
+  consumer:
+    enabled: True
+
+    topics:
+      - "xxxx-jenkins-events"
+    group_id: "xxxx_consumer_group"
+    client_id: "xxxx_client_id"
+    session_timeout_ms: 60000
+    auto_offset_reset: 'earliest'
+    dead_letter_queue_topic: "xxxx-jenkins-events-dlq"
+
+  heartbeat:  # required fields:  enabled, client_id, topic
+    enabled: False
+    client_id: "xxxx-service-prod-0-t"
+    interval: 30
+    topic: "uS-heartbeats"
+
+logger:
+    version: 1
+    handlers:
+        console:
+          class: "logging.StreamHandler"
+          level: "INFO"
+          formatter: "pr_serv_formatter"
+          stream: "ext://sys.stdout"
+        file:
+          class: "logging.handlers.TimedRotatingFileHandler"
+          level: "DEBUG"
+          formatter: "pr_serv_formatter"
+          filename: "/var/log/build_monitor.log"
+          when: "midnight"
+          backupCount: 30
+          interval: 1
+          encoding: "UTF-8"
+        mail:
+          class: "logging.handlers.SMTPHandler"
+          level: "CRITICAL"
+          mailhost: "mailserver.xiolab.lab.emc.com"
+          fromaddr: "Build monitor micro service <noreply@dell.com>"
+          toaddrs:
+            - "devops.support.skunk.team@dell.com"
+          subject: "Build monitor micro service failure"
+    formatters:
+        pr_serv_formatter:
+            format: "%(levelname)s |%(asctime)s |%(filename)s %(lineno)d | %(message)s"
+            datefmt: "%m-%d %H:%M:%S"
+
+    loggers:
+      micro_service:
+        level: "DEBUG"
+        handlers:
+          - "console"
+          - "file"

@@ -1,0 +1,3 @@
+cd /home/cyc/repos/drp-uspycommon/test/monitor/integration
+./kafka_msg_generator.py  --kafka localhost --topic testTopic1 --dryrun --repo repo1 --branch branch1 --type RETAIL --time 4
+./kafka_msg_generator.py  --kafka localhost --topic testTopic1 --repo repo1 --branch branch1 --type RETAIL --time 4

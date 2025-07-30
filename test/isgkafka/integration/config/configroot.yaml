@@ -1,0 +1,112 @@
+framework:
+  # Number of seconds to wait before gracefully exit
+  # Default 50 seconds. Optional setting
+  signal_handler_wait_time: 10 #seconds
+  # Number of times to call a function with the `attempt` decorator
+  # Optional setting. Default 3 times
+  # The minimum value of this flag is 1.
+  # Otherwise function won't be called.
+  max_attempts: 1
+  # Time interval between each function call
+  # Optional setting. Default 5 seconds
+  attempt_interval: 5 #seconds
+  # set logging level, defaults to INFO. Optional field
+  log_level: "INFO"
+
+
+# Define a simple consumer with server and topics only
+# It is used to retrieve last message on each topic
+last_message_retriever:
+  bootstrap_servers:
+    - "10.235.79.118:9092"
+  group_id: "mr-be-gr-20"
+  topics:
+    - name: "testTopic2"
+    - name: "testTopic5"
+
+kafka:
+  bootstrap_servers:
+    - "10.235.79.118:9092"
+
+  consumers:
+      # If the enabled flag is False or missing, a consumer thread won't start
+    - enabled: True  # required filed
+      name: "consumer1" # required filed
+      topics:
+      # If partition is not specified, we listen on all partitions
+      # For the same consumer, all topics either need have assigned partition or no assigned partition
+        - name: "testTopic4"
+        - name: "testTopic5"
+      # Set your own group_id and client_id.
+      # Don't copy this one. This is an example.
+      # Required field
+      group_id: "mr-be-gr-2"
+      client_id: "mr_be_2" # required field
+      # optional field, default: 60000
+      session_timeout_ms: 60000
+      # optional field, default: earliest
+      auto_offset_reset: 'earliest'
+
+      # Optional field: Only one message filter class in module is supported
+      # The first filter class implementation found is picked up. Rest are ignored.
+      filter_module: "messages.mymessagefilter"
+      handlers: # Optional field: Multiple handler modules can be provided
+      # Each module can have multiple handler class implementations
+      # All handler implementations will be picked up.
+        - handler_module: "messages.mymessagehandler"
+
+    - enabled: True # required filed
+      name: "consumer2" # required filed
+      topics:
+      # If a partition is assigned for one topic, partitions have to be assigned for
+      # all other topics in the same consumer.
+        - name: "testTopic2"
+          partitions:
+          # if no offset is specified or offset is -1,
+          # consumer will read from the last committed offset.
+          # if offset is out of bound, offset will be default to auto_offset_reset setting.
+          - number: 0
+          - number: 1
+            offset: 2
+        - name: "testTopic3"
+          partitions:
+          - number: 0
+            offset: 1
+          - number: 1
+            offset: 2
+      group_id: "mr-be-gr-3"
+      client_id: "mr_be_3" # required field
+      # optional filed, default: 6000
+      session_timeout_ms: 60000
+      # optional field(latest or earliest), default: earliest
+      auto_offset_reset: 'earliest'
+      # Optional field: Only one message filter class in module is supported
+      # The first filter class implementation found is picked up. Rest are ignored.
+      filter_module: "messages.mymessagefilter"
+      handlers: #  Optional field: Multiple handler modules can be provided
+      # Each module can have multiple handler class implementations
+      # All handler implementations will be picked up.
+        - handler_module: "messages.mymessagehandler"
+        - handler_module: "messages.mymessagehandler2"
+
+    - enabled: True
+      name: "consumer3"
+      topics:
+        - name: "testTopic1"
+      group_id: "mr-be-gr-1"
+      client_id: "mr_be_1"
+      # if there are not filter or handler modules defined for consumer,
+      # filter and handler instances need to be registered for this consumer in client codes.
+
+    # This consumer supports subscription of topics using topic pattern string
+    - enabled: True # required filed
+      name: "consumer4" # required filed
+      # Either topics or pattern needs be defined for one consumer, but not both.
+      pattern: "^t.*Topic?"
+      group_id: "mr-be-gr-4"
+      client_id: "mr_be_4" # required field
+      filter_module: "messages.mymessagefilter"
+      handlers: #  Optional field: Multiple handler modules can be provided
+      # Each module can have multiple handler class implementations
+      # All handler implementations will be picked up.
+        - handler_module: "messages.mymessagehandler4"
