@@ -1,0 +1,124 @@
+framework:
+  # Number of seconds to wait before gracefully exit
+  # Default 50 seconds. Optional setting
+  signal_handler_wait_time: 10  # seconds
+  # Number of times to call a function with the `attempt` decorator
+  # Optional setting. Default 3 times
+  # The minimum value of this flag is 1.
+  # Otherwise function won't be called.
+  max_attempts: 1
+  # Time interval between each function call
+  # Optional setting. Default 5 seconds
+  attempt_interval: 5  # seconds
+  # set logging level, defaults to INFO. Optional field
+  log_level: "INFO"
+
+
+kafka:
+  bootstrap_servers:
+    - "s3.ubuntu.home:9092,s7.ubuntu.home:9092,s8.ubuntu.home:9092"
+
+  consumers:
+    - enabled: true
+      name: "consumer1"
+      topics:
+        - name: "testTopic4"
+      group_id: "jobmanager_group_id1"
+      client_id: "jobmanager_client_id1"
+      # Optional setting. Default: False. This flag is to indicate if maximum
+      # running job throttle will be applied for this consumer.
+      throttle_max_running_jobs: true
+      filter_module: "messages.mymessagefilter"
+      handlers:
+        - handler_module: "messages.mymessagehandler"
+
+    - enabled: true
+      name: "consumer2"
+      topics:
+        - name: "testTopic5"
+      group_id: "regular_consumer_group_id1"
+      client_id: "regular_consumer_client_id1"
+      filter_module: "messages.mymessagefilter"
+      handlers:
+        - handler_module: "messages.mymessagehandler2"
+
+
+# These are job templates for job manager. Each call of create_job function will create a new job.
+# Additional job command arguments and labels can be injected when calling create_job function.
+# The created jobs are monitored by job manager for termination (succeeded or failed).
+# The completed jobs will be deleted by job manager after a preset period under framework setting.
+# In case of pod failure, the job never restarts the pod. The job is considered complete but failed.
+# It's up to the microservice business logic to decide how many jobs to create in parallel.
+# The requested parallelism (.spec.parallelism) on job configuration can only be set to 1 for now.
+jobmanager:
+  # The maximum running time for a job before API issues error in log.
+  # Optional setting. Default 1800 seconds.
+  job_max_running_time: 1800  # seconds
+  # How long to keep a failed job
+  # Optional setting. Default 120 seconds.
+  keeping_failed_job_time: 60  # seconds
+  # How long to keep a succeeded job
+  # Optional setting. Default 120 seconds.
+  keeping_succeeded_job_time: 30  # seconds
+  # Required setting. A unique name for job manager
+  job_manager_name: "jm-myuS-mytopic"
+  # Maximum number of active jobs, spawned by this microservice.
+  # Once the number of active jobs reaches this number,
+  # KafkaConsumer is paused.
+  # Optional setting. Default is 3 jobs.cd /usr/l
+  max_parallel_job: 3
+
+  # A k8s namespace used when running job manager in local VM
+  # This is the namespace where jobs will be deployed in k8s cluster
+  # Optional setting. Ignored if job manager is running in K8s
+
+  dev_namespace: "bobb"
+
+  jobs:
+    - apiVersion: batch/v1
+      kind: Job
+      metadata:
+        generateName: job1-
+      spec:
+        backoffLimit: 3
+        template:
+          spec:
+            containers:
+              - name: container1
+                image: s2.ubuntu.home:5000/alpine/simple_job:v1
+                command: ["python", "-u", "main.py"]
+                imagePullPolicy: IfNotPresent
+                volumeMounts:
+                  - name: config
+                    mountPath: "/app/config/configroot.yml"
+                    subPath: configroot.yml
+                    readOnly: true
+            volumes:
+              - name: config
+                configMap:
+                  name: job1
+            #restartPolicy: OnFailure
+
+    - apiVersion: batch/v1
+      kind: Job
+      metadata:
+        generateName: job2-
+      spec:
+        template:
+          spec:
+            containers:
+              - name: container1
+                image: s2.ubuntu.home:5000/alpine/simple_job:v1
+                command: ["python", "-u", "main.py"]
+                args: ['1']
+                imagePullPolicy: Always
+                volumeMounts:
+                  - name: config
+                    mountPath: "/app/config/configroot.yml"
+                    subPath: configroot.yml
+                    readOnly: true
+            volumes:
+              - name: config
+                configMap:
+                  name: job2
+            restartPolicy: OnFailure
