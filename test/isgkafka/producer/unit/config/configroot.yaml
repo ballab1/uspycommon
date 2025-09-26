@@ -1,0 +1,38 @@
+kafka:
+  bootstrap_servers:
+    - "10.10.10.10:9092"
+
+  # multiple producers. Each supports multiple topics and individual partition.
+  producers:  # required fields:  name, topics
+    - name: producer1 # required field.
+      # optional field to be added in each message to indicate what kind of message it is.
+      message_type: type1 # optional field
+      topics:
+        - name: "testTopic2" #required field
+          partition: 1 # optional partition number
+        - name: "testTopic4"
+      # A key to associate with the message.
+      # Can be used to determine which partition to send the message to.
+      # If partition is None (and producer’s partitioner config is left as default),
+      # then messages with the same key will be delivered to the same partition.
+      key: "foo" #optional
+      # Requests are pipelined to kafka brokers up to this number of maximum requests per broker connection.
+      # Default: 5, per python kafka producer documentation.
+      max_in_flight_reqs_per_conn: 1 #optional
+      # Setting a value greater than zero will cause the client to resend any record
+      # whose send fails with a potentially transient error.
+      # Default: 0, per python kafka producer documentation.
+      retries: 3 #optional
+      # The number of acknowledgments the producer requires the leader to have received
+      # before considering a request complete.
+      # Defaults to acks=1, per python kafka producer documentation.
+      acks: "all" #optional
+      do_flush: True # optional(True/False), default: True, makes message immediately available to send
+
+    - name: producer2
+      topics:
+        - name: "testTopic1"
+          partition: 0
+      max_in_flight_reqs_per_conn: 1
+      retries: 3
+      acks: "all"

@@ -1,0 +1,6 @@
+kafka:
+  consumer:
+    topic: techops
+    debug:
+      level: 1
+      dir: /home/cyc

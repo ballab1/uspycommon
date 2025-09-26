@@ -1,0 +1,5 @@
+[distutils]
+index-servers = devpi
+
+[devpi]
+repository = http://devpi.prod.k8s.home/testuser/dev

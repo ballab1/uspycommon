@@ -1,0 +1,29 @@
+framework:
+  monitor:
+    port: 9300
+    collect_default_metric: True
+  signal_handler_wait_time: 10 #seconds
+
+kafka:
+  bootstrap_servers:
+    - "10.244.32.244:9092"
+
+  consumers:
+    - enabled: True
+      topics:
+        - name: "testTopic2"
+      client_id: "mr_be_3" # required field
+      group_id: "mr-be-gr-3" #required field
+      filter_module: "messages.msgfilterkafka3"
+      handlers: # required field: Multiple handler modules can be provided
+      # Each module can have multiple handler class implementations
+      # No handler implementations will be picked up because the filter throws an excpetion.
+        - handler_module: "messages.msghandlerkafka3"
+
+  producers:  # required fields:  name, topics
+    - name: producer1 # required field.
+      topics:
+        - name: "testTopic2" #required field
+    - name: producer2
+      topics:
+        - name: "testTopic2"

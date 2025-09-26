@@ -1,0 +1,6 @@
+{
+  "sleep" : "SLEEP_PARAM",
+  "exception" : "EXCEPTION",
+  "record_id": "RANDOM_UUID",
+  "handler_id": "HANDLER_ID"
+}

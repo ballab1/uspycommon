@@ -1,0 +1,28 @@
+################################################################################
+# Copyright (c) 2017-2022 Dell Inc. or its subsidiaries.  All rights reserved.
+################################################################################
+"""
+    mymessagefilter.py
+    -----------------
+
+    The MessageFilter calss implements AbcMessageFilter class and provides
+    a filter function to be used in isgkafka consumer.
+"""
+import logging
+import random
+from time import sleep
+from isgkafka.messagefilter import AbcMessageFilter
+from drpbase import constant
+
+
+class MessageFilter2(AbcMessageFilter):
+    """
+    A MessageFilter class that implements AbcMessageFilter
+    """
+
+    def __init__(self):
+        self.lgr = logging.getLogger(constant.LOGGER_NAME)
+
+    def filter_messages(self, message):
+        self.lgr.info("Filter2 called.")
+        return True

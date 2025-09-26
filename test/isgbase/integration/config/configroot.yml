@@ -1,0 +1,5 @@
+framework:
+  monitor:
+    port: 9100
+    collect_default_metric: True
+  signal_handler_wait_time: 10 #seconds

@@ -1,0 +1,4 @@
+framework:
+  monitor:
+    port: 8002
+    collect_default_metric: True

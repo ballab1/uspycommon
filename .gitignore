@@ -1,0 +1,17 @@
+dist
+__pycache__
+drp_package_uspycommon.egg-info
+htmlcov
+.coverage
+.vscode
+.venv
+.cache
+.ash_history
+*.log
+core.*
+venv/**
+.idea/**
+coverage.xml
+unittest.xml
+**/*.egg-info/**
+**/.env

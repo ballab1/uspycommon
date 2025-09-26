@@ -1,0 +1,19 @@
+framework:
+  monitor:
+    port: 8004
+    collect_default_metric: True
+    metrics:
+    - name: wrong_label
+      description: example wrong label in the ms
+      labels: ['l1']
+      type: GAUGE
+      collector:
+        module: metricgenerator_wrong
+        class: MetricGeneratorWrongLabel
+    - name: wrong_gauge_value
+      description: example wrong gauge value in the ms
+      labels: []
+      type: GAUGE
+      collector:
+        module: metricgenerator_wrong
+        class: MetricGeneratorWrongGaugeValues

@@ -1,0 +1,12 @@
+framework:
+  monitor:
+    port: 8001
+    collect_default_metric: True
+    metrics:
+    - name: test_metric1
+      description: example metric1 in the ms
+      labels: ['l1','l2']
+      type: GAUGE
+      collector:
+        module: metricgenerator1
+        class: MetricGenerator1

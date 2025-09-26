@@ -1,0 +1,42 @@
+# included in framework package.
+# if you update setup.cfg, please include it below.
+cachetools==5.3.1
+certifi==2024.2.2
+charset-normalizer==2.0.12
+confluent-kafka==2.1.0
+Deprecated==1.2.14
+google-auth==2.22.0
+idna==3.6
+kubernetes==29.0.0
+oauthlib==3.2.2
+prometheus-client==0.19.0
+pyasn1==0.5.0
+pyasn1-modules==0.3.0
+python-dateutil==2.8.2
+python-json-logger==2.0.7
+PyYAML==6.0.1
+PyJWT==2.8.0
+requests==2.31.0
+requests-oauthlib==1.3.1
+rsa==4.9
+six==1.16.0
+urllib3==1.26.18
+websocket-client==1.6.1
+wrapt==1.16.0
+cryptography==42.0.5
+# needed for build and development
+attrs==21.4.0
+build==1.0.3
+coverage==6.2
+iniconfig==1.1.1
+mocker==1.1.1
+packaging==23.1
+pep517==0.12.0
+pluggy==1.0.0
+py==1.11.0
+pylint==3.0.0-a5
+pyparsing==3.0.9
+pytest==7.1.2
+tomli==2.0.1
+pytest-mock==3.7.0
+pytest-cov==3.0.0

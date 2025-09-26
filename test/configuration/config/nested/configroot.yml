@@ -1,0 +1,15 @@
+logger:
+    version: 1
+    handlers: 
+        console: 
+          class: "logging.StreamHandler"
+          level: "INFO"
+          formatter: "pr_serv_formatter"
+          stream: "ext://sys.stdout"
+
+debugger:
+    version: 1
+    handlers: 
+        console: 
+          formatter: "pr_serv_formatter"
+          stream: "ext://sys.stdout"

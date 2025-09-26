@@ -1,0 +1,37 @@
+
+services:
+    python:
+        env_file:
+            - .env
+        build:
+            args:
+                BASE_TAG: 'latest'
+                CBF_VERSION: 'v3.9.10'
+                DEV_TEAM: 'alpine'
+                DOCKER_LOG_DIR: '/var/log'
+                DOCKER_REGISTRY: 'registry.ubuntu.home/'
+                FROM_BASE: '${DOCKER_REGISTRY:-}docker.io/python:3.13.2-alpine3.21'
+                HOST_IPS: '10.3.1.10'
+                OS_VERSION: '3.21.3'
+                PIP_VERSION: '24.3.1'
+                PYTHON_VERSION: '3.13.2'
+                TARGET: '${DOCKER_REGISTRY:-}alpine/python/3.13.2:latest'
+                USER_ID: '1026:100'
+                WORK_DIR: '/app'
+            context: .
+            dockerfile: Dockerfile
+            labels:
+                container.build.host: 's3.ubuntu.home'
+                container.build.time: '2026-07-25T11:23:39.847381277Z'
+                container.fingerprint: '<.. TBD: calculate from git tree and ENV ..>'
+                container.git.commit: 'abefed59fa3a4de5a856c4e08a8bf8354032c7d9'
+                container.git.refs: 'HEAD -> main'
+                container.git.url: 'https://nas.home:5001/GIT/drp-uspycommon'
+                container.name: 'jenkins/inbound-agent'
+                container.origin: 'abefed5-dirty'
+                container.os: 'alpine'
+                container.parent: $FROM_BASE
+                container.tag: 'latest'
+        container_name: python
+        hostname: python
+        image: registry.ubuntu.home/alpine/python/3.13.2:latest
