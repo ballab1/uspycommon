@@ -1,0 +1,319 @@
+#!/bin/echo 'This script cannot be executabled directly. Please source from another script'
+
+#################################################################################
+#  functions for 'ci'
+#################################################################################
+#--------------------------------------------------------------------------------
+function ci::checkForJQ()
+{
+    if [ "${USE_JQ:-}" ]; then
+         return "$USE_JQ"
+
+     elif [ "$(which jq)" ]; then
+        local -i status
+        grep -qsE '^\s*FROM_BASE:\s+' "$PROJECT_SETTINGS" && status=$? || status=$?
+        USE_JQ="$status"
+
+    else
+        USE_JQ=-1
+    fi
+    return 0
+}
+#--------------------------------------------------------------------------------
+function ci::docker_compose()
+{
+    local TARGET="$(grep -E '^TARGET=' ci/.env | cut -d '=' -f 2 | sed -e "s|'||g")"
+    local PREVIOUS="$(grep -E '^#PREVIOUS=' ci/project.settings | awk '{print substr($0,11)}')"  # substr($0,10) renmoves '#PREVIOUS='
+    eval "PREVIOUS=$($PREVIOUS)"
+
+    docker-compose -f ci/docker-compose.yml build || exit
+    docker push "$TARGET" || exit
+    if [ "${#PREVIOUS}" -gt 0 ] && [ "$PREVIOUS" != "$TARGET" ]; then
+        echo "docker-utilities delete --no_confirm_delete '$PREVIOUS"
+        docker-utilities delete --no_confirm_delete "$PREVIOUS" ||:
+        echo "docker rmi '$PREVIOUS'"
+        docker rmi "$PREVIOUS" ||:
+        # update running image
+        local UPDATE_TAG="$(grep -E '^#UPDATE_TAG=' ci/project.settings | awk '{print substr($0,13)}'| sed 's|${TARGET}|'"${TARGET}"'|' )"
+        echo "$UPDATE_TAG"
+        echo "$($UPDATE_TAG)"
+    fi
+    echo "Built: '${TARGET}'"
+}
+
+#--------------------------------------------------------------------------------
+function ci::die()
+{
+    printf 'ERROR: %s\n' "$@" >&2
+    exit 1
+}
+
+#--------------------------------------------------------------------------------
+function ci::exportParam()
+{
+    local -r param="${1:?}"
+
+    [ -z "${!param:-}" ] || return
+
+    if [ "${USE_JQ:-1}" -eq 0 ]; then
+      #YAML file version
+        eval "export ${param}=$(jq -r '.env.'"$param" <<< "$PROJECT_JSON")"
+    else
+      #INI file version
+        eval "export $(grep -E "^${param}=" "$PROJECT_SETTINGS")"
+    fi
+}
+
+#--------------------------------------------------------------------------------
+#shellcheck disable=SC2120
+function ci::getLatest()
+{
+    local -r repo="${1:-}"
+
+    if [ -z "${repo:-}" ]; then
+        git rev-parse HEAD | awk '{print substr($1,1,10)}'
+    else
+        git ls-remote "$repo" HEAD | awk '{print substr($1,1,10)}'
+    fi
+}
+
+#--------------------------------------------------------------------------------
+function ci::getProjectParams()
+{
+    if [ "${USE_JQ:-1}" -eq 0 ]; then
+      #YAML file version
+        # return just the names of the STATIC environment variables  (any without '$')
+        local key jqCmd
+        while read -r key; do
+            # shellcheck disable=SC2016
+            jqCmd="$(printf '.env.%s|test("%s|%s")' "$key" '\\$\\{' '\\$\\(' )"
+            [ "$(jq -r "$jqCmd" <<< "$PROJECT_JSON")" = 'false' ] && echo "$key"
+        done < <(jq -r '.env|keys[]' <<< "$PROJECT_JSON")
+    else
+      #INI file version
+        # return just the names of the STATIC environment variables  (any without '$')
+        grep -vE '^\s*#|^\s*$' "$PROJECT_SETTINGS" | grep -Ev '\$\{|\$\(' | sed -E -e 's|^([^#=]+)=.*$|\1|'
+    fi
+}
+
+#--------------------------------------------------------------------------------
+function ci::getReplaceableParams()
+{
+    if [ "${USE_JQ:-1}" -eq 0 ]; then
+      #YAML file version
+        # return just the names of the DYNAMIC environment variables  (any with '$')
+        local key jqCmd
+        while read -r key; do
+            # shellcheck disable=SC2016
+            jqCmd="$(printf '.env.%s|test("%s|%s")' "$key" '\\$\\{' '\\$\\(' )"
+            [ "$(jq -r "$jqCmd" <<< "$PROJECT_JSON")" = 'true' ] && echo "$key"
+        done < <(jq -r '.env|keys[]' <<< "$PROJECT_JSON")
+    else
+      #INI file version
+        # return just the names of the DYNAMIC environment variables  (any with '$')
+        grep -vE '^\s*#|^\s*$' "$PROJECT_SETTINGS" | grep -E '\$\{|\$\(' | sed -E -e 's|^([^#=]+)=.*$|\1|'
+    fi
+}
+
+#--------------------------------------------------------------------------------
+function ci::gitBranch()
+{
+    local branch=$(git rev-parse --abbrev-ref HEAD)
+    if [ "$branch" = 'HEAD' ]; then
+        local -a branches
+        mapfile -t branches < <(git log -n1 --oneline --decorate | \
+                                sed -e 's/[^\(]*(\([^\)]*\)).*/\1/' -e 's:origin/::g' -e 's:,::g' -e 's|tag:||g' -e 's|HEAD||g' | \
+                                awk '{if(length($0)>0) {print $0}}' RS=' '| \
+                                sort -u | \
+                                awk '{if(length($0)>0) {print $0}}')
+        if [ "${#branches[0]}" -eq 0 ]; then
+            git log -n8 --oneline --graph --abbrev-commit --decorate --all >&2
+            ci::die "***ERROR: failure to determine current branch for $(ci::gitRepoName). Most likely on a detached HEAD"'\n' 'warn'
+        fi
+        branch="${branches[0]}"
+    fi
+    echo "$branch"
+    return 0
+}
+
+#--------------------------------------------------------------------------------
+function ci::gitRepoName()
+{
+  basename "$(git remote get-url origin)"
+}
+
+#--------------------------------------------------------------------------------
+function ci::initialize()
+{
+    [ "${DEBUG:-0}" != 0 ] && set -x
+
+    # verify our GIT environment is OK
+    {
+      git rev-parse --is-inside-work-tree || exit
+      git rev-parse --abbrev-ref HEAD || exit
+      git log -n1 --oneline --decorate || exit
+#      git remote get-url origin || exit
+    } >/dev/null
+
+    export PROJECT_JSON USE_JQ
+    export ROOT_DIR="$(git rev-parse --show-toplevel)"
+    export PROGRAM_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+    export PROGRAM_NAME="$(basename "${BASH_SOURCE[0]}" | sed 's|.sh$||')"
+    export HOST_IPS="$(hostname -i)"
+    export GID="$(id -g)"
+#    export UID="$(id -u)"
+    export USER_ID="${UID}:${GID}"
+
+    PROJECT_SETTINGS="${ROOT_DIR}/ci/project.settings"
+
+    [ -f "$PROJECT_SETTINGS" ] || PROJECT_SETTINGS="${ROOT_DIR}/project.settings"
+    [ -f "$PROJECT_SETTINGS" ] || ci::die "No PROJECT_SETTINGS defined or unable to locate $PROJECT_SETTINGS"
+
+    ci::checkForJQ
+    if [ "${USE_JQ:-1}" -eq 0  ]; then
+        [ "$(command -v jq)" ] || ci::die "jq: command not found. Please install 'jq' and continue..."
+        [ "$(command -v pip)" ] || ci::die "pip: command not found. Please install 'pip' and continue..."
+        [ "$(pip list 2>/dev/null | awk '/PyYAML/ {print $2}')" ] || ci::die "PyYAML => 5.3.1 not found. Please install PyYAML and continue..."
+
+        PROJECT_JSON="$(ci::settings_to_json "$PROJECT_SETTINGS")"
+        [ "$PROJECT_JSON" ] || ci::die "Unable to read $PROJECT_SETTINGS - perhaps it is not a valid YAML file."
+    fi
+
+    export HOSTNAME="$(hostname -f)"
+    export WORK_DIR='/usr/local/service'
+
+    readonly GID HOSTNAME HOST_IPS PROGRAM_DIR PROGRAM_NAME PROJECT_SETTINGS ROOT_DIR USER_ID WORK_DIR
+}
+
+#--------------------------------------------------------------------------------
+function ci::kaniko_build()
+{
+    # Create image for Kafka consumer service
+    ci::set_dot_env
+    "${ROOT_DIR}/ci/kaniko.sh"
+}
+
+#--------------------------------------------------------------------------------
+function ci::set_dot_env()
+{
+    local -r envFile="${ROOT_DIR}/ci/.env"
+    local -a params=('CONTAINER_BUILD_HOST' 'CONTAINER_BUILD_TIME' 'CONTAINER_FINGERPRINT' 'CONTAINER_GIT_COMMIT' \
+                     'CONTAINER_GIT_REFS' 'CONTAINER_GIT_URL' 'CONTAINER_ORIGIN' 'CONTAINER_TAG' 'GID' 'HOST_IPS' 'USER_ID' )
+    local -a env_params replaceables
+    mapfile -t env_params < <(ci::getProjectParams)
+    mapfile -t replaceables < <(ci::getReplaceableParams)
+    local -r origin="$(git describe --tags --always --dirty)"
+    local container_tag="$(ci::gitBranch)"
+
+    # update (if needed) this project if we are on a developer branch
+    if [[ $container_tag =~ HEAD|main|staging|integration ]]; then
+        # get latest commit for this repo to use as container_tag (for others to reference)
+        # shellcheck disable=SC2119
+        container_tag="$(ci::getLatest)"
+    else
+        container_tag="${container_tag//\//.}"
+        [ "${JENKINS_URL:-}" ] || ci::update_dependent_files   # only perform updates in local environment
+    fi
+
+    # read/setenv definitions from PROJECT_SETTINGS which are defined, but not containing any ENV references
+    local param
+    for param in "${env_params[@]}"; do
+        ci::exportParam "$param"
+    done
+
+    {
+        # read definitions from $PROJECT_SETTINGS
+        for param in "${params[@]}" "${env_params[@]}" "${replaceables[@]}"; do
+            local val=''
+            local prj_param=0
+            if [[ " ${env_params[*]} " =~ ' '${param}' ' ]]; then
+                prj_param=1
+            elif [[ " ${replaceables[*]} " =~ ' '${param}' ' ]]; then
+                prj_param=2
+            fi
+
+            # get val unless it already was previously defined in environment
+            if [ "${!param:-}" ]; then
+                val="${!param:-}"
+
+            else
+                case "$param" in
+                    CONTAINER_BUILD_HOST)      val="$(hostname -f)";;
+                    CONTAINER_BUILD_TIME)      val="$(date +%Y-%m-%d\\T%H:%M:%S.%N\\Z -u)";;
+                    CONTAINER_FINGERPRINT)     val='<.. TBD: calculate from git tree and ENV ..>';;
+                    CONTAINER_GIT_COMMIT)      val="$(git rev-parse HEAD)";;
+                    CONTAINER_GIT_REFS)        val="$(git log -n 1 --pretty=%d HEAD | sed 's/[^\(]*(\([^\)]*\)).*/\1/')";;
+                    CONTAINER_GIT_URL)         val="$(git config --get remote.origin.url)";;
+                    CONTAINER_ORIGIN)          val="$origin";;
+                    CONTAINER_PARENT)          val="$FROM_BASE";;
+                    CONTAINER_TAG)             val="$container_tag";;
+                esac
+                case "$prj_param" in
+                    # set PREDFINED vars
+                    0)
+                        eval "${param}='${val}'"
+                        ;;
+#                   1)
+                    2)
+                        # set REPLACEABLE vars from project settings
+                        ci::exportParam "$param"
+                        ;;
+                esac
+            fi
+
+            # add param to file if it is not there
+            echo "${param}='${!param}'"
+            if [ "$param" = 'FROM_BASE' ]; then
+                export CONTAINER_PARENT="$FROM_BASE"
+                echo "CONTAINER_PARENT='$FROM_BASE'"
+            fi
+        done
+
+    }  > "$envFile"
+
+    echo "Updated: $envFile"
+    return 0
+}
+
+#--------------------------------------------------------------------------------
+function ci::settings_to_json()
+{
+    local -r yamlFile=${1:?}
+    local python="$(which python ||:)"
+    [ "$python" ] || python="$(which python3 ||:)"
+    if [ "$python" ]; then
+        local -ar YAML_TO_JSON=( "$python" '-c' 'import sys, yaml, json; json.dump(yaml.safe_load(sys.stdin), sys.stdout)' )
+        "${YAML_TO_JSON[@]}" < "$yamlFile"
+    fi
+}
+
+#--------------------------------------------------------------------------------
+function ci::update_dependent_files()
+{
+    local dependency file json param repo
+    local -i count idx
+
+    [ "${USE_JQ:-1}" -eq 0 ] || return 0
+
+    local file param
+    while read -r param; do
+#        local orgParm="${!param:-}"
+        json="$(jq -er '.dependencies.'"$param" <<< "$PROJECT_JSON")"
+        idx="$(jq -er 'length' <<< "$json")"
+        while [ "$idx" -gt 0 ]; do
+            (( idx -= 1 ))
+            dependency="$(jq -e ".[$idx]" <<< "$json")"
+            repo="$(jq -er '.repo' <<< "$dependency")"
+            [ "${orgParm:-}" ] || eval 'export ${param}=$(ci::getLatest "$repo")'
+            while read -r file; do
+                echo "updating '$file'"
+                envsubst '$'"$param" < "${file}.template" > "$file"
+                (( count += 1 ))
+            done < <(jq -er '.files[]' <<< "$dependency")
+        done
+    done < <(jq -r 'if has("dependencies") then .dependencies|keys[] else halt end' <<< "$PROJECT_JSON")
+
+#    printf 'Updated %d dependent files\n' "$count"
+}
+
+#--------------------------------------------------------------------------------

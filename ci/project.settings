@@ -1,0 +1,19 @@
+################################################################################
+# Definitions of REQUIRED variables
+################################################################################
+
+OS_VERSION='3.21'
+PYTHON_VERSION='3.13.2'
+CONTAINER_OS='alpine'
+BASE_TAG="${PYTHON_VERSION}-${CONTAINER_OS}${OS_VERSION}"
+CONTAINER_NAME="python/${BASE_TAG}"
+#DEBUG_TRACE='0'
+DEV_TEAM=''
+DOCKER_LOG_DIR='/var/log'
+DOCKER_REGISTRY='registry.ubuntu.home/'
+WORK_DIR='/app'
+
+FROM_BASE="${DOCKER_REGISTRY}docker.io/python:3.13.2-alpine3.21"
+TARGET="${DOCKER_REGISTRY}${CONTAINER_OS}/${CONTAINER_NAME:?}:${CONTAINER_TAG:-latest}"
+#PREVIOUS=ssh s5 kubectl get pod --namespace web -o jsonpath='{.items[0].spec.containers[0].image}'
+#UPDATE_TAG=ssh s5 kubectl set image -n web deployment/web web=${TARGET}

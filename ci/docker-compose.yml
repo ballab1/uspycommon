@@ -16,7 +16,7 @@ services:
                 PIP_VERSION: '24.3.1'
                 PYTHON_VERSION: '3.13.2'
                 TARGET: '${DOCKER_REGISTRY:-}alpine/python/3.13.2:latest'
-                USER_ID: '1026:100'
+                USER_ID: '1000:100'
                 WORK_DIR: '/app'
             context: .
             dockerfile: Dockerfile
