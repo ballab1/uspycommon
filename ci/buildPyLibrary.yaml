@@ -29,7 +29,7 @@ spec:
       - name: workspace-volume
         mountPath: /home/jenkins/agent
     - name: python
-      image:  registry.ubuntu.home/alpine/python/3.13.2:21
+      image:  registry.ubuntu.home/alpine/python/3.13.2-alpine3.21:e22840792b
       imagePullPolicy: Always
       command:
         - cat

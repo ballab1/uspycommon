@@ -622,7 +622,7 @@ class JobManager:
                     )
                     self.logger.info(
                         f"Job id={job_id} & name={job_name} failed. "
-                        + f"It will be deleted in {constant.KEEPING_FAILED_JOB_TIME-delta} seconds."
+                        + f"It will be deleted in {constant.KEEPING_FAILED_JOB_TIME - delta} seconds."
                     )
                 else:
                     job.spec.ttl_seconds_after_finished = 0

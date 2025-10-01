@@ -84,7 +84,7 @@ class GitHubApp:
             self.app_private_key,
             algorithm="RS256",
         )
-        if type(jwt_generated) == bytes:
+        if type(jwt_generated) is bytes:
             jwt_generated = jwt_generated.decode("utf-8")
 
         headers = {

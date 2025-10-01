@@ -18,6 +18,7 @@ pipeline {
 
   environment {
     PYTHON = 'python'
+    UNIT_TESTS = 0
     VENV = '/usr/src/venv'
     PACKAGE_DIR = 'dist'
     DEVPI_SERVER = 'http://devpi.prod.k8s.home/'
@@ -28,42 +29,68 @@ pipeline {
 
 
   stages {
-    stage('Configure Build Containers') {
-      steps {
-        container('python') {
-          sh """
-            source ${VENV}/bin/activate
-            ${PYTHON} -m build
-          """
+    stage('Static code checks') {
+//        when { expression { currentBuild.currentResult == 'SUCCESS' } }
+//        failFast false
+        steps {
+            container('python') {
+                sh '''
+                    source ${VENV}/bin/activate
+                    flake8 --config ci/.flake8 src/
+                '''
+            }
         }
-      }
+    }
+
+    stage('Tests & Code Coverage') {
+        when { environment name: 'UNIT_TESTS', value: '1' }
+        steps {
+            container(name: 'python') {
+                sh '''
+                    source ${VENV}/bin/activate
+                    python3 -m pytest --verbose --junit-xml reports/unit_tests.xml
+                '''
+                archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/unit_tests.xml'
+            }
+        }
+    }
+
+    stage('Build package') {
+        steps {
+            container('python') {
+                sh """
+                    source ${VENV}/bin/activate
+                    ${PYTHON} -m build
+                """
+            }
+        }
     }
 
     stage('Archive Artifacts') {
-      steps {
-        container('python') {
-          archiveArtifacts artifacts: "${PACKAGE_DIR}/*.whl,${PACKAGE_DIR}/*.tar.gz", fingerprint: true
+        steps {
+            container('python') {
+                archiveArtifacts artifacts: "${PACKAGE_DIR}/*.whl,${PACKAGE_DIR}/*.tar.gz", fingerprint: true
+            }
         }
-      }
     }
 
     stage('Upload to DevPi') {
-      steps {
-        container('python') {
-          uploadPythonPackage([ venv: "$VENV",
-                                credentialsid: 'DEV_PI_CREDS',
-                                package_dir: "$PACKAGE_DIR",
-                                usedevpi: true,
-                                devpi_server: "$DEVPI_SERVER",
-                                devpi_index: "$DEVPI_INDEX"])
+        steps {
+            container('python') {
+                uploadPythonPackage([ venv: "$VENV",
+                                      credentialsid: 'DEV_PI_CREDS',
+                                      package_dir: "$PACKAGE_DIR",
+                                      usedevpi: true,
+                                      devpi_server: "$DEVPI_SERVER",
+                                      devpi_index: "$DEVPI_INDEX"])
+                }
+            }
         }
-      }
     }
-  }
 
-  post {
-    always {
-      kafkaBuildReporter()
+    post {
+        always {
+            kafkaBuildReporter()
+        }
     }
-  }
 }

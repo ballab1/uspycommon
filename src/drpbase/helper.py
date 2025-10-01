@@ -263,7 +263,7 @@ class Helper:
             if offset < min_offset or offset >= max_offset:
                 msg = (
                     f"Offset: {offset} doesn't exist for {topic_name}. "
-                    + f"Offset range: ({min_offset}, {max_offset-1})"
+                    + f"Offset range: ({min_offset}, {max_offset - 1})"
                 )
                 cls.logger.error(msg)
                 raise ValueError(msg)
