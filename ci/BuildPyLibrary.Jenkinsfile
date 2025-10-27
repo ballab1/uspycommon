@@ -19,7 +19,6 @@ pipeline {
   environment {
     PYTHON = 'python'
     UNIT_TESTS = 0
-    VENV = '/usr/src/venv'
     PACKAGE_DIR = 'dist'
     DEVPI_SERVER = 'http://devpi.prod.k8s.home/'
     DEVPI_INDEX = 'testuser/dev'
@@ -34,10 +33,7 @@ pipeline {
 //        failFast false
         steps {
             container('python') {
-                sh '''
-                    source ${VENV}/bin/activate
-                    flake8 --config ci/.flake8 src/
-                '''
+                sh 'flake8 --config ci/.flake8 src/'
             }
         }
     }
@@ -46,10 +42,7 @@ pipeline {
         when { environment name: 'UNIT_TESTS', value: '1' }
         steps {
             container(name: 'python') {
-                sh '''
-                    source ${VENV}/bin/activate
-                    python3 -m pytest --verbose --junit-xml reports/unit_tests.xml
-                '''
+                sh 'python3 -m pytest --verbose --junit-xml reports/unit_tests.xml'
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/unit_tests.xml'
             }
         }
@@ -58,10 +51,7 @@ pipeline {
     stage('Build package') {
         steps {
             container('python') {
-                sh """
-                    source ${VENV}/bin/activate
-                    ${PYTHON} -m build
-                """
+                sh "${PYTHON} -m build"
             }
         }
     }
