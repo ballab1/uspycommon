@@ -12,7 +12,7 @@ spec:
     - "s3.ubuntu.home"
   containers:
     - name: jnlp
-      image: registry.ubuntu.home/alpine/jenkins/inbound-agent/3345.v03dee9b_f88fc-1-alpine-jdk21:7988abe9
+      image: registry.ubuntu.home/alpine/jenkins/inbound-agent/3283.v92c105e0f819-8-alpine-jdk21:009463fb25
       imagePullPolicy: Always
       resources:
         limits:
@@ -29,7 +29,7 @@ spec:
       - name: workspace-volume
         mountPath: /home/jenkins/agent
     - name: python
-      image:  registry.ubuntu.home/alpine/python/3.13.2-alpine3.21:05a36f96
+      image:  registry.ubuntu.home/alpine/python/3.13.2-alpine3.21:e22840792b
       imagePullPolicy: Always
       command:
         - cat
