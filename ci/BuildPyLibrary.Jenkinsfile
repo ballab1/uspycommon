@@ -19,7 +19,6 @@ pipeline {
   environment {
     PYTHON = 'python'
     UNIT_TESTS = 0
-    VENV = '/usr/src/venv'
     PACKAGE_DIR = 'dist'
     DEVPI_SERVER = 'http://devpi.prod.k8s.home/'
     DEVPI_INDEX = 'testuser/dev'
@@ -30,14 +29,9 @@ pipeline {
 
   stages {
     stage('Static code checks') {
-//        when { expression { currentBuild.currentResult == 'SUCCESS' } }
-//        failFast false
         steps {
             container('python') {
-                sh '''
-                    source ${VENV}/bin/activate
-                    flake8 --config ci/.flake8 src/
-                '''
+                sh 'flake8 --config ci/.flake8 src/'
             }
         }
     }
@@ -46,10 +40,7 @@ pipeline {
         when { environment name: 'UNIT_TESTS', value: '1' }
         steps {
             container(name: 'python') {
-                sh '''
-                    source ${VENV}/bin/activate
-                    python3 -m pytest --verbose --junit-xml reports/unit_tests.xml
-                '''
+                sh "${PYTHON} -m pytest --verbose --junit-xml reports/unit_tests.xml"
                 archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/unit_tests.xml'
             }
         }
@@ -58,10 +49,7 @@ pipeline {
     stage('Build package') {
         steps {
             container('python') {
-                sh """
-                    source ${VENV}/bin/activate
-                    ${PYTHON} -m build
-                """
+                sh "${PYTHON} -m build"
             }
         }
     }
@@ -77,8 +65,7 @@ pipeline {
     stage('Upload to DevPi') {
         steps {
             container('python') {
-                uploadPythonPackage([ venv: "$VENV",
-                                      credentialsid: 'DEV_PI_CREDS',
+                uploadPythonPackage([ credentialsid: 'DEV_PI_CREDS',
                                       package_dir: "$PACKAGE_DIR",
                                       usedevpi: true,
                                       devpi_server: "$DEVPI_SERVER",
